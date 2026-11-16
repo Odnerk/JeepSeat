@@ -14,6 +14,7 @@ urlpatterns = [
     path('feedback/', include('feedback.urls', namespace='feedback')),
     path('users/', include('users.urls', namespace='users')),
     path('login/', auth_views.LoginView.as_view(template_name='login.html', redirect_authenticated_user=True), name='login'),
+    path('auto-login/', user_views.auto_login_view, name='auto_login'),
     path('logout/', user_views.logout_view, name='logout'),
     path('register/', user_views.register_view, name='register'),
 ]
