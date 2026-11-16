@@ -1,0 +1,149 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#dae8fc', 'primaryBorderColor': '#6c8ebf', 'primaryTextColor': '#000000', 'lineColor': '#000000', 'tertiaryColor': '#ffffff'}}}%%
+erDiagram
+    %% Supabase Auth Schema
+    AUTH_USERS ||--o| APP_USER : "has profile"
+    AUTH_USERS {
+        UUID id PK
+        VARCHAR email
+        VARCHAR encrypted_password
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        TIMESTAMP last_sign_in_at
+    }
+
+    %% Django Core Tables
+    DJANGO_SESSION {
+        VARCHAR session_key PK
+        TEXT session_data
+        TIMESTAMP expire_date
+    }
+    
+    AUTH_GROUP {
+        INT id PK
+        VARCHAR name
+    }
+    
+    AUTH_GROUP ||--o{ APP_USER : "assigned role"
+
+    %% Application Models
+    APP_USER ||--o{ APP_EJEEP : "owns (as driver)"
+    APP_USER ||--o{ APP_EJEEP : "manages (as conductor)"
+    APP_ROUTE ||--o{ APP_EJEEP : "operates on"
+    APP_ROUTE ||--o{ APP_ROUTE_STOP : "includes"
+    APP_ROUTE_STOP ||--o{ APP_EJEEP : "is next stop for"
+    APP_EJEEP ||--o{ APP_SEAT : "contains"
+    APP_EJEEP ||--o| APP_TRACKER : "tracked by"
+    APP_USER ||--o{ APP_COMMUTER_PING : "sends (for heatmap)"
+    APP_USER ||--o{ APP_COMPLAINT : "submits"
+    APP_EJEEP ||--o{ APP_COMPLAINT : "is subject of"
+    APP_USER ||--o{ APP_COMPLAINT : "is reported in (driver/conductor)"
+    APP_USER ||--o{ APP_TRIP_PLAN : "creates"
+    APP_TRIP_PLAN ||--o{ APP_TRIP_LEG : "contains"
+    APP_ROUTE ||--o{ APP_TRIP_LEG : "used in"
+
+    APP_USER {
+        INT UserID PK
+        UUID supabase_uid FK
+        INT group_id FK
+        VARCHAR Role
+        VARCHAR FullName
+        BOOLEAN is_active
+        BOOLEAN is_staff
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_EJEEP {
+        INT EJeepID PK
+        INT DriverID FK
+        INT ConductorID FK
+        INT RouteID FK
+        INT NextStopID FK
+        TIMESTAMP NextStopETA
+        VARCHAR PlateNumber
+        INT MaxCapacity
+        INT CurrentPassengerLoad
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_TRACKER {
+        INT TrackerID PK
+        INT EJeepID FK
+        VARCHAR IMEI
+        VARCHAR SimNumber
+        DECIMAL CurrentLat
+        DECIMAL CurrentLong
+        TIMESTAMP last_ping_at
+        BOOLEAN is_online
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_COMMUTER_PING {
+        BIGINT PingID PK
+        INT UserID FK
+        DECIMAL Latitude
+        DECIMAL Longitude
+        TIMESTAMP timestamp
+    }
+
+    APP_COMPLAINT {
+        INT ComplaintID PK
+        INT ReporterID FK
+        INT ReportedJeepID FK
+        INT ReportedUserID FK
+        VARCHAR ComplaintType
+        TEXT Description
+        VARCHAR Status
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_ROUTE {
+        INT RouteID PK
+        VARCHAR RouteName
+        VARCHAR StartPoint
+        VARCHAR EndPoint
+        DECIMAL BaseFare
+        DECIMAL PerKmFare
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_ROUTE_STOP {
+        INT StopID PK
+        INT RouteID FK
+        VARCHAR StopName
+        INT StopOrder
+        DECIMAL Latitude
+        DECIMAL Longitude
+    }
+
+    APP_SEAT {
+        INT SeatID PK
+        INT EJeepID FK
+        VARCHAR SeatNumber
+        VARCHAR Status
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    APP_TRIP_PLAN {
+        INT PlanID PK
+        INT UserID FK
+        VARCHAR Origin
+        VARCHAR Destination
+        DECIMAL TotalEstimatedFare
+        TIMESTAMP created_at
+    }
+
+    APP_TRIP_LEG {
+        INT LegID PK
+        INT PlanID FK
+        INT LegOrder
+        INT RouteID FK
+        INT StartStopID FK
+        INT EndStopID FK
+        DECIMAL EstimatedFare
+    }

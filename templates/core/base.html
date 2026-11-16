@@ -1,0 +1,246 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <title>{% block title %}JeepSeat{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}JeepSeat — Real-time E-Jeep GPS tracking and seat availability for Philippine commuters.{% endblock %}" />
+
+    <!-- Geist via Google Fonts fallback (Inter as closest match) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ── Aqryl-style Design Tokens ── */
+        :root {
+            --bg:         #efefef;   /* aqryl's exact bg */
+            --surface:    #e4e4e4;   /* slightly deeper for inner panels */
+            --card-bg:    rgba(255,255,255,0.55); /* translucent white for cards */
+            --border:     rgba(0,0,0,0.08);
+
+            --text:       rgba(0,0,0,0.87);
+            --text-65:    rgba(0,0,0,0.65);
+            --text-50:    rgba(0,0,0,0.50);
+            --text-40:    rgba(0,0,0,0.40);
+
+            --accent:     #0066cc;
+            --accent-hover: #0055b3;
+            --accent-bg:  rgba(0,102,204,0.08);
+
+            --radius-sm:  8px;
+            --radius-md:  12px;
+            --radius-lg:  16px;
+            --radius-xl:  20px;
+            --radius-2xl: 24px;
+
+            --font: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            --t: 0.15s ease;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            min-height: 100vh;
+            font-family: var(--font);
+            font-size: 14px;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.5;
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { color: var(--accent-hover); }
+
+        /* ── Layout shell: aqryl uses p-3 all around ── */
+        .page-shell {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 12px;
+            gap: 12px;
+        }
+
+        /* ── Floating navbar (rounded pill) ── */
+        .navbar {
+            display: flex;
+            align-items: center;
+            height: 56px;
+            padding: 0 16px;
+            background: var(--bg);
+            border-radius: var(--radius-xl);
+            flex-shrink: 0;
+            gap: 16px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.3px;
+            flex-shrink: 0;
+        }
+
+        .navbar-brand:hover { color: var(--text); }
+
+        .navbar-spacer { flex: 1; }
+
+        .nav-link {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 400;
+            color: var(--text-65);
+            transition: all var(--t);
+        }
+        .nav-link:hover {
+            background: rgba(0,0,0,0.06);
+            color: var(--text);
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font);
+            font-size: 13.5px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all var(--t);
+            text-decoration: none;
+            white-space: nowrap;
+            line-height: 1;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-65);
+        }
+        .btn-ghost:hover {
+            background: rgba(0,0,0,0.06);
+            color: var(--text);
+        }
+
+        .btn-surface {
+            background: rgba(0,0,0,0.06);
+            color: var(--text-65);
+        }
+        .btn-surface:hover {
+            background: rgba(0,0,0,0.1);
+            color: var(--text);
+        }
+
+        .btn-full { width: 100%; justify-content: center; }
+        .btn-lg   { padding: 10px 20px; font-size: 14px; }
+
+        /* ── Main content panel (rounded, fills remaining height) ── */
+        .content-panel {
+            flex: 1;
+            background: var(--bg);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Form controls ── */
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+
+        .form-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-50);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 13.5px;
+            transition: all var(--t);
+            outline: none;
+        }
+        .form-control::placeholder { color: var(--text-40); }
+        .form-control:focus {
+            background: rgba(0,0,0,0.02);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.12);
+        }
+
+        select.form-control { cursor: pointer; }
+
+        .field-error {
+            font-size: 12px;
+            color: #c00;
+        }
+
+        /* ── Alerts ── */
+        .alert {
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 400;
+            margin-bottom: 14px;
+            border: 1px solid transparent;
+        }
+        .alert-success { background: rgba(22,163,74,0.08); border-color: rgba(22,163,74,0.2); color: #15803d; }
+        .alert-error, .alert-danger { background: rgba(220,38,38,0.07); border-color: rgba(220,38,38,0.18); color: #c00; }
+        .alert-info  { background: var(--accent-bg); border-color: rgba(0,102,204,0.2); color: var(--accent); }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-40);
+            font-size: 12px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Fade in ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.4s ease both; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="page-shell">
+        {% block navbar %}{% endblock %}
+        <div class="content-panel">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

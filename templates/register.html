@@ -1,0 +1,245 @@
+{% extends "core/base.html" %}
+
+{% block title %}Create account — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <span class="navbar-brand">JeepSeat</span>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'login' %}">Sign in</a>
+    <a class="btn btn-primary" href="{% url 'register' %}">Get started</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .register-panel {
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 52px 24px 64px;
+        overflow-y: auto;
+    }
+
+    .register-box {
+        width: 100%;
+        max-width: 440px;
+    }
+
+    .register-header {
+        margin-bottom: 28px;
+    }
+    .register-header h1 {
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: -0.4px;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+    .register-header p {
+        font-size: 13px;
+        color: var(--text-50);
+    }
+
+    .register-form { display: flex; flex-direction: column; gap: 14px; }
+
+    /* Two-column row */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    /* Section label */
+    .section-label {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--text-40);
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    /* Role picker */
+    .role-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .role-opt { position: relative; cursor: pointer; }
+    .role-opt input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+
+    .role-card {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 11px 13px;
+        background: rgba(0,0,0,0.04);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--t);
+    }
+    .role-card strong {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+    }
+    .role-card small {
+        font-size: 11.5px;
+        color: var(--text-50);
+    }
+
+    .role-opt input:checked + .role-card {
+        background: var(--accent-bg);
+        border-color: rgba(0,102,204,0.3);
+    }
+    .role-opt input:checked + .role-card strong { color: var(--accent); }
+    .role-card:hover { border-color: rgba(0,0,0,0.16); }
+
+    #id_role { display: none; }
+
+    .hint { font-size: 11.5px; color: var(--text-40); margin-top: 3px; }
+
+    .register-footer {
+        margin-top: 22px;
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-50);
+    }
+
+    @media (max-width: 480px) {
+        .form-row { grid-template-columns: 1fr; }
+        .register-panel { padding: 32px 16px 48px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-panel">
+    <div class="register-box fade-up">
+
+        <div class="register-header">
+            <h1>Create your account</h1>
+            <p>Get started with JeepSeat for free</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form id="register-form" method="post" action="{% url 'register' %}" class="register-form">
+            {% csrf_token %}
+
+            <p class="section-label">Personal information</p>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="register-firstname">First name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                        <span class="field-error">{{ form.first_name.errors.0 }}</span>
+                    {% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="register-lastname">Last name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <span class="field-error">{{ form.last_name.errors.0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-email">Email address</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                    <span class="field-error">{{ form.email.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <p class="section-label" style="margin-top:4px;">Account details</p>
+
+            <div class="form-group">
+                <label class="form-label" for="register-username">Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <span class="field-error">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div>
+                <p class="form-label" style="margin-bottom:6px;">Account type</p>
+                <div class="role-grid">
+                    <label class="role-opt">
+                        <input type="radio" name="role_ui" value="commuter" id="role-commuter" checked />
+                        <div class="role-card">
+                            <strong>Commuter</strong>
+                            <small>Track jeeps &amp; seats</small>
+                        </div>
+                    </label>
+                    <label class="role-opt">
+                        <input type="radio" name="role_ui" value="conductor" id="role-conductor" />
+                        <div class="role-card">
+                            <strong>Conductor</strong>
+                            <small>Manage seat map</small>
+                        </div>
+                    </label>
+                </div>
+                {{ form.role }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-password1">Password</label>
+                {{ form.password1 }}
+                <span class="hint">Minimum 8 characters. Cannot be entirely numeric.</span>
+                {% if form.password1.errors %}
+                    <span class="field-error">{{ form.password1.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-password2">Confirm password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                    <span class="field-error">{{ form.password2.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors.0 }}</div>
+            {% endif %}
+
+            <button id="register-submit-btn" type="submit" class="btn btn-primary btn-full btn-lg" style="margin-top:4px;">
+                Create account
+            </button>
+        </form>
+
+        <div class="register-footer">
+            Already have an account? <a id="go-to-login" href="{% url 'login' %}">Sign in</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.querySelectorAll('#register-form input:not([type="radio"]), #register-form select').forEach(el => {
+        el.classList.add('form-control');
+    });
+
+    const sel = document.getElementById('id_role');
+    const radios = document.querySelectorAll('input[name="role_ui"]');
+    const sync = () => radios.forEach(r => { if (r.checked) sel.value = r.value; });
+    radios.forEach(r => r.addEventListener('change', sync));
+    sync();
+
+    if (sel.value) radios.forEach(r => { r.checked = r.value === sel.value; });
+</script>
+{% endblock %}

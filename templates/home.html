@@ -1,0 +1,79 @@
+{% extends "core/base.html" %}
+
+{% block title %}Home — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <span class="navbar-brand">JeepSeat</span>
+    <div class="navbar-spacer"></div>
+    <span style="font-size:13px; color:var(--text-50);">{{ user.username }}</span>
+    <a id="logout-btn" href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .home-panel {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+    }
+
+    .home-content {
+        text-align: center;
+        max-width: 420px;
+    }
+
+    .home-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-40);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+
+    .home-content h1 {
+        font-size: 28px;
+        font-weight: 400;
+        letter-spacing: -0.6px;
+        color: var(--text);
+        line-height: 1.25;
+        margin-bottom: 10px;
+    }
+
+    .home-content p {
+        font-size: 14px;
+        color: var(--text-50);
+        line-height: 1.7;
+        margin-bottom: 28px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="home-panel">
+    <div class="home-content fade-up">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <p class="home-eyebrow">Home Screen</p>
+        <h1>Hello, {{ user.first_name|default:user.username }}.</h1>
+        <p>This is the home screen of JeepSeat.</p>
+
+        <a id="logout-link" href="{% url 'logout' %}" class="btn btn-surface btn-lg">
+            Sign out
+        </a>
+
+    </div>
+</div>
+{% endblock %}
