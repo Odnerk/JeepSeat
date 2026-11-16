@@ -1,0 +1,120 @@
+{% extends "core/base.html" %}
+
+{% block title %}Feedback & Complaints — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .fb-container { padding: 28px 36px; overflow-y: auto; }
+    .grid-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; margin-top: 20px; }
+    .card { background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 24px; }
+    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .complaint-card { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; }
+    .badge-status { padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .badge-Pending { background: rgba(234,179,8,0.15); color: #ca8a04; }
+    .badge-Investigating { background: rgba(0,102,204,0.12); color: var(--accent); }
+    .badge-Resolved { background: rgba(22,163,74,0.12); color: #15803d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fb-container fade-up">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div>
+        <h1 style="font-size: 24px; font-weight: 600;">Passenger Feedback & Incident Reports</h1>
+        <p style="color: var(--text-50); font-size: 13px; margin-top: 4px;">
+            Lodge commuter service reports, safety complaints, or conductor commendations.
+        </p>
+    </div>
+
+    <div class="grid-layout">
+        <!-- List of Complaints -->
+        <div>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <a href="{% url 'feedback:complaint_list' %}" class="btn {% if not current_status %}btn-primary{% else %}btn-surface{% endif %}">All</a>
+                <a href="{% url 'feedback:complaint_list' %}?status=Pending" class="btn {% if current_status == 'Pending' %}btn-primary{% else %}btn-surface{% endif %}">Pending</a>
+                <a href="{% url 'feedback:complaint_list' %}?status=Investigating" class="btn {% if current_status == 'Investigating' %}btn-primary{% else %}btn-surface{% endif %}">Investigating</a>
+                <a href="{% url 'feedback:complaint_list' %}?status=Resolved" class="btn {% if current_status == 'Resolved' %}btn-primary{% else %}btn-surface{% endif %}">Resolved</a>
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">Filed Incident Reports ({{ complaints.count }})</h3>
+                {% for c in complaints %}
+                    <div class="complaint-card">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+                            <div>
+                                <span style="font-weight:600; font-size:14px;">{{ c.complaint_type }}</span>
+                                {% if c.reported_jeep %}
+                                    <span style="font-size:12px; color:var(--text-50); margin-left:6px;">&bull; Jeep {{ c.reported_jeep.plate_number }}</span>
+                                {% endif %}
+                            </div>
+                            <span class="badge-status badge-{{ c.status }}">{{ c.status }}</span>
+                        </div>
+                        <p style="font-size:13px; color:var(--text-65); line-height:1.5;">{{ c.description }}</p>
+                        <div style="font-size:11px; color:var(--text-40); margin-top:10px;">
+                            Reported by {{ c.reporter.username }} &bull; {{ c.created_at|date:"M d, Y, g:i A" }}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p style="color:var(--text-40); font-size:13px;">No complaints match this filter.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- File Complaint Form -->
+        <div class="card" style="height:fit-content;">
+            <h3 class="card-title">File an Incident Report</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label">Issue Category</label>
+                    <select name="complaint_type" class="form-control" required>
+                        <option value="">Select category...</option>
+                        <option value="Overcharging Fare">Overcharging Fare</option>
+                        <option value="Reckless Driving">Reckless Driving</option>
+                        <option value="Airconditioning Issue">Airconditioning Issue</option>
+                        <option value="Seat Reservation Dispute">Seat Reservation Dispute</option>
+                        <option value="Conductor Misconduct">Conductor Misconduct</option>
+                        <option value="Lost Item">Lost Item Inquiry</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label class="form-label">E-Jeep Unit (Optional)</label>
+                    <select name="jeep_id" class="form-control">
+                        <option value="">Select E-Jeep plate if known...</option>
+                        {% for j in jeeps %}
+                            <option value="{{ j.id }}">{{ j.plate_number }} ({{ j.route.name|default:"Unassigned" }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label class="form-label">Incident Narrative</label>
+                    <textarea name="description" class="form-control" rows="4" placeholder="Describe the incident with relevant details (approximate time, stop location, etc.)..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Submit Official Report &rarr;</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
