@@ -1,0 +1,189 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ route.name }} — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-container {
+        padding: 28px 36px;
+        overflow-y: auto;
+    }
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--text-50);
+        margin-bottom: 16px;
+    }
+    .back-link:hover { color: var(--text); }
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 24px;
+    }
+    .card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 24px;
+    }
+    .card-title {
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 18px;
+    }
+    .stop-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+        padding-left: 20px;
+    }
+    .stop-timeline::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 10px;
+        bottom: 10px;
+        width: 2px;
+        background: var(--surface);
+    }
+    .stop-item {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stop-item::before {
+        content: '';
+        position: absolute;
+        left: -19px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px var(--accent);
+    }
+    .stop-name { font-size: 14px; font-weight: 500; }
+    .stop-coords { font-size: 11px; color: var(--text-40); }
+    .fare-box {
+        background: var(--surface);
+        border-radius: var(--radius-md);
+        padding: 16px;
+        margin-top: 16px;
+    }
+    .fare-amount {
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--accent);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container fade-up">
+    <a href="{% url 'routes:route_list' %}" class="back-link">&larr; Back to Routes</a>
+
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 24px; font-weight: 600; margin-bottom: 6px;">{{ route.name }}</h1>
+        <p style="color: var(--text-50); font-size: 13px;">
+            Origin: <strong>{{ route.start_point }}</strong> &bull; Destination: <strong>{{ route.end_point }}</strong> &bull; Base Fare: <strong>₱{{ route.base_fare }}</strong> &bull; Per-Km: <strong>₱{{ route.per_km_fare }}</strong>
+        </p>
+    </div>
+
+    <div class="detail-grid">
+        <!-- Left: Stops List -->
+        <div class="card">
+            <h3 class="card-title">Designated Transit Stops ({{ stops.count }})</h3>
+            <div class="stop-timeline">
+                {% for stop in stops %}
+                    <div class="stop-item">
+                        <div>
+                            <div class="stop-name">Stop {{ stop.stop_order }}: {{ stop.name }}</div>
+                            <div class="stop-coords">GPS: {{ stop.latitude }}, {{ stop.longitude }}</div>
+                        </div>
+                        <span class="badge" style="background:var(--surface); padding:2px 8px; border-radius:6px; font-size:11px;">Stop #{{ stop.stop_order }}</span>
+                    </div>
+                {% empty %}
+                    <p style="color:var(--text-40);">No stops listed for this route yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right: Fare Calculator & Active Jeeps -->
+        <div>
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 class="card-title">Route Fare Calculator</h3>
+                <form method="GET">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-label">Boarding Stop</label>
+                        <select name="origin" class="form-control" required>
+                            <option value="">Select pickup stop...</option>
+                            {% for stop in stops %}
+                                <option value="{{ stop.id }}" {% if origin_id == stop.id %}selected{% endif %}>
+                                    {{ stop.stop_order }}. {{ stop.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label class="form-label">Alighting Stop</label>
+                        <select name="destination" class="form-control" required>
+                            <option value="">Select drop-off stop...</option>
+                            {% for stop in stops %}
+                                <option value="{{ stop.id }}" {% if dest_id == stop.id %}selected{% endif %}>
+                                    {{ stop.stop_order }}. {{ stop.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Compute Fare</button>
+                </form>
+
+                {% if calculated_fare is not None %}
+                    <div class="fare-box">
+                        <div style="font-size:12px; color:var(--text-50);">Estimated Fare ({{ num_stops }} stops)</div>
+                        <div class="fare-amount">₱{{ calculated_fare }}</div>
+                        <div style="font-size:11px; color:var(--text-40); margin-top:4px;">Discounted Student/Senior: ₱{{ calculated_fare|floatformat:2 }}</div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">Assigned E-Jeeps ({{ route.jeeps.count }})</h3>
+                {% for jeep in route.jeeps.all %}
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:600; font-size:13px;">{{ jeep.plate_number }}</div>
+                            <div style="font-size:11px; color:var(--text-40);">Driver: {{ jeep.driver.get_full_name|default:jeep.driver.username|default:"Unassigned" }}</div>
+                        </div>
+                        <span class="badge" style="background:rgba(0,102,204,0.1); color:var(--accent); padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600;">
+                            {{ jeep.current_passenger_load }}/{{ jeep.max_capacity }} Seats
+                        </span>
+                    </div>
+                {% empty %}
+                    <p style="color:var(--text-40); font-size:13px;">No E-Jeeps currently on this route.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
