@@ -1,0 +1,121 @@
+{% extends "core/base.html" %}
+
+{% block title %}{{ jeep.plate_number }} — Seat Map & Telemetry{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-container { padding: 28px 36px; overflow-y: auto; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-50); margin-bottom: 16px; }
+    .card { background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 24px; }
+    .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; }
+    .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+    }
+    .seat-box {
+        padding: 16px 8px;
+        text-align: center;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        transition: all var(--t);
+    }
+    .seat-available { background: rgba(22,163,74,0.08); border-color: rgba(22,163,74,0.3); color: #15803d; }
+    .seat-occupied { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.3); color: #c00; }
+    .telemetry-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container fade-up">
+    <a href="{% url 'vehicles:fleet_list' %}" class="back-link">&larr; Back to Fleet</a>
+
+    <div style="margin-bottom: 24px; display:flex; justify-content:space-between; align-items:flex-end;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 600;">E-Jeep: {{ jeep.plate_number }}</h1>
+            <p style="color: var(--text-50); font-size: 13px;">Route: {{ jeep.route.name }}</p>
+        </div>
+        <div style="text-align:right;">
+            <span style="font-size: 22px; font-weight: 700; color: #15803d;">{{ available_seats_count }}</span>
+            <span style="font-size: 13px; color: var(--text-50);">seats available</span>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Seat Map -->
+        <div class="card">
+            <h3 style="font-size:16px; font-weight:600;">Cabin Seat Availability Layout</h3>
+            <p style="font-size:12px; color:var(--text-40); margin-top:2px;">Click any seat button below to toggle reservation/occupancy state.</p>
+            
+            <div class="seat-grid">
+                {% for seat in seats %}
+                    <form method="POST" style="display:contents;">
+                        {% csrf_token %}
+                        <input type="hidden" name="seat_id" value="{{ seat.id }}">
+                        <button type="submit" class="seat-box {% if seat.status == 'available' %}seat-available{% else %}seat-occupied{% endif %}" style="cursor:pointer; width:100%; border-style:solid;">
+                            <div style="font-size:16px; font-weight:700;">{{ seat.seat_number }}</div>
+                            <div style="font-size:11px; text-transform:uppercase; margin-top:4px;">{{ seat.status }}</div>
+                        </button>
+                    </form>
+                {% empty %}
+                    <p style="grid-column:1/-1; color:var(--text-40);">No configured seats.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Telemetry & Crew -->
+        <div>
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 style="font-size:16px; font-weight:600; margin-bottom:14px;">GPS Telemetry & Hardware</h3>
+                <div class="telemetry-row">
+                    <span style="color:var(--text-50);">Tracker IMEI</span>
+                    <span style="font-family:monospace; font-weight:600;">{{ jeep.tracker.imei|default:"N/A" }}</span>
+                </div>
+                <div class="telemetry-row">
+                    <span style="color:var(--text-50);">SIM MSISDN</span>
+                    <span>{{ jeep.tracker.sim_number|default:"N/A" }}</span>
+                </div>
+                <div class="telemetry-row">
+                    <span style="color:var(--text-50);">Current GPS Coordinates</span>
+                    <span>{{ jeep.tracker.current_lat|default:"14.620" }}, {{ jeep.tracker.current_long|default:"121.053" }}</span>
+                </div>
+                <div class="telemetry-row">
+                    <span style="color:var(--text-50);">Last GPS Telemetry Ping</span>
+                    <span>{{ jeep.tracker.last_ping_at|date:"M d, Y, g:i A"|default:"Just now" }}</span>
+                </div>
+                <div class="telemetry-row" style="border:none;">
+                    <span style="color:var(--text-50);">Signal Status</span>
+                    <span style="color:#15803d; font-weight:600;">Active 4G LTE</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size:16px; font-weight:600; margin-bottom:14px;">Assigned Transit Personnel</h3>
+                <div class="telemetry-row">
+                    <span style="color:var(--text-50);">Driver</span>
+                    <span style="font-weight:600;">{{ jeep.driver.get_full_name|default:jeep.driver.username|default:"Unassigned" }}</span>
+                </div>
+                <div class="telemetry-row" style="border:none;">
+                    <span style="color:var(--text-50);">Conductor</span>
+                    <span style="font-weight:600;">{{ jeep.conductor.get_full_name|default:jeep.conductor.username|default:"Unassigned" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
