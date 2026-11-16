@@ -47,3 +47,23 @@ def register_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+@login_required
+def profile_view(request):
+    if request.method == 'POST':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        role = request.POST.get('role', '').strip()
+        
+        user = request.user
+        if first_name: user.first_name = first_name
+        if last_name: user.last_name = last_name
+        if email: user.email = email
+        if role in ['commuter', 'conductor', 'driver']: user.role = role
+        user.save()
+        return redirect('users:profile')
+
+    return render(request, 'users/profile.html', {
+        'user': request.user,
+    })

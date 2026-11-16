@@ -1,0 +1,79 @@
+{% extends "core/base.html" %}
+
+{% block title %}User Profile — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'users:profile' %}">Profile</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .profile-container { padding: 28px 36px; overflow-y: auto; max-width: 760px; margin: 0 auto; }
+    .card { background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 28px; }
+    .role-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; background: rgba(0,102,204,0.1); color: var(--accent); font-weight: 600; font-size: 12px; margin-top: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container fade-up">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 24px; font-weight: 600;">Account Settings & Role Profile</h1>
+        <p style="color: var(--text-50); font-size: 13px; margin-top: 4px;">
+            Manage your personal transit profile, credentials, and commuter status.
+        </p>
+    </div>
+
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid var(--border);">
+            <div>
+                <h3 style="font-size:18px; font-weight:600;">{{ user.get_full_name|default:user.username }}</h3>
+                <span class="role-badge">{{ user.get_role_display }}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-40);">
+                Member since {{ user.date_joined|date:"M Y" }}
+            </div>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-bottom:16px;">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:16px;">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-control" value="{{ user.email }}">
+            </div>
+
+            <div class="form-group" style="margin-bottom:24px;">
+                <label class="form-label">System Role</label>
+                <select name="role" class="form-control">
+                    <option value="commuter" {% if user.role == 'commuter' %}selected{% endif %}>Commuter (Passenger)</option>
+                    <option value="conductor" {% if user.role == 'conductor' %}selected{% endif %}>Conductor (Fare & Seat Operator)</option>
+                    <option value="driver" {% if user.role == 'driver' %}selected{% endif %}>Driver (Fleet Operator)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Save Changes &rarr;</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
