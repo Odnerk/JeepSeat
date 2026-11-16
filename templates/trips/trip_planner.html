@@ -1,0 +1,160 @@
+{% extends "core/base.html" %}
+
+{% block title %}Trip Planner — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .planner-container { padding: 28px 36px; overflow-y: auto; }
+    .grid-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; margin-top: 20px; }
+    .card { background: #fff; border-radius: var(--radius-lg); border: 1px solid var(--border); padding: 24px; }
+    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .plan-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="planner-container fade-up">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div>
+        <h1 style="font-size: 24px; font-weight: 600;">Commuter Trip Planner & Live Pickup Ping</h1>
+        <p style="color: var(--text-50); font-size: 13px; margin-top: 4px;">
+            Plan multi-stop E-Jeep journeys, view fare approximations, or broadcast your GPS pickup location.
+        </p>
+    </div>
+
+    <div class="grid-layout">
+        <!-- Trip Planner Form -->
+        <div class="card">
+            <h3 class="card-title">Create New Trip Plan</h3>
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="plan_trip">
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Transit Line / Route</label>
+                    <select name="route" id="routeSelect" class="form-control" required onchange="updateStops()">
+                        <option value="">Select transit route...</option>
+                        {% for route in routes %}
+                            <option value="{{ route.id }}" data-stops='[{% for s in route.stops.all %}{"id":{{ s.id }},"name":"{{ s.name|escapejs }}","order":{{ s.stop_order }}}{% if not forloop.last %},{% endif %}{% endfor %}]'>
+                                {{ route.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">Starting Stop (Boarding)</label>
+                    <select name="start_stop" id="startStopSelect" class="form-control" required>
+                        <option value="">Select pickup stop...</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label">Destination Stop (Drop-off)</label>
+                    <select name="end_stop" id="endStopSelect" class="form-control" required>
+                        <option value="">Select drop-off stop...</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Generate Trip Plan & Save &rarr;</button>
+            </form>
+
+            <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border);">
+                <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Broadcast Pickup Location (Ping Driver)</h4>
+                <p style="font-size: 12px; color: var(--text-50); margin-bottom: 12px;">Alert active E-Jeeps on this corridor that you are waiting at the curb.</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="ping_location">
+                    <input type="hidden" name="lat" value="14.620000">
+                    <input type="hidden" name="lng" value="121.053000">
+                    <button type="submit" class="btn btn-surface btn-full">📍 Broadcast Live Commuter Ping</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Recent Trips & Pings -->
+        <div>
+            <div class="card" style="margin-bottom: 20px;">
+                <h3 class="card-title">My Saved Trip Plans</h3>
+                {% for plan in user_plans %}
+                    <div class="plan-item">
+                        <div>
+                            <div style="font-weight: 600; font-size: 13px;">{{ plan.origin }} &rarr; {{ plan.destination }}</div>
+                            <div style="font-size: 11px; color: var(--text-40);">{{ plan.created_at|date:"M d, Y, g:i A" }}</div>
+                        </div>
+                        <span style="font-weight: 700; color: var(--accent); font-size: 14px;">₱{{ plan.total_estimated_fare }}</span>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-40); font-size: 13px;">No saved trip plans yet.</p>
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <h3 class="card-title">Recent Broadcasted Pings</h3>
+                {% for ping in user_pings %}
+                    <div class="plan-item">
+                        <div>
+                            <div style="font-weight: 500; font-size: 13px;">Pickup Ping Broadcasted</div>
+                            <div style="font-size: 11px; color: var(--text-40);">GPS: {{ ping.latitude }}, {{ ping.longitude }}</div>
+                        </div>
+                        <span style="font-size: 11px; color: var(--text-40);">{{ ping.timestamp|timesince }} ago</span>
+                    </div>
+                {% empty %}
+                    <p style="color: var(--text-40); font-size: 13px;">No active pickup pings.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStops() {
+    const routeSelect = document.getElementById('routeSelect');
+    const selectedOption = routeSelect.options[routeSelect.selectedIndex];
+    const stopsJson = selectedOption.getAttribute('data-stops');
+    const startSelect = document.getElementById('startStopSelect');
+    const endSelect = document.getElementById('endStopSelect');
+
+    startSelect.innerHTML = '<option value="">Select pickup stop...</option>';
+    endSelect.innerHTML = '<option value="">Select drop-off stop...</option>';
+
+    if (!stopsJson) return;
+
+    try {
+        const stops = JSON.parse(stopsJson);
+        stops.forEach(s => {
+            const opt1 = document.createElement('option');
+            opt1.value = s.id;
+            opt1.textContent = s.order + '. ' + s.name;
+            startSelect.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = s.id;
+            opt2.textContent = s.order + '. ' + s.name;
+            endSelect.appendChild(opt2);
+        });
+    } catch(e) {
+        console.error(e);
+    }
+}
+</script>
+{% endblock %}
