@@ -1,79 +1,146 @@
 {% extends "core/base.html" %}
 
-{% block title %}Home — JeepSeat{% endblock %}
+{% block title %}Dashboard — JeepSeat{% endblock %}
 
 {% block navbar %}
 <header class="navbar fade-up">
-    <span class="navbar-brand">JeepSeat</span>
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
     <div class="navbar-spacer"></div>
-    <span style="font-size:13px; color:var(--text-50);">{{ user.username }}</span>
-    <a id="logout-btn" href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }} ({{ user.role|title }})</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
 </header>
 {% endblock %}
 
 {% block extra_head %}
 <style>
-    .home-panel {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 48px 24px;
+    .dashboard-container { padding: 28px 36px; overflow-y: auto; }
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin: 20px 0 28px 0;
     }
-
-    .home-content {
-        text-align: center;
-        max-width: 420px;
+    .metric-card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 20px;
     }
-
-    .home-eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        color: var(--text-40);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 20px;
-    }
-
-    .home-content h1 {
+    .metric-num {
         font-size: 28px;
-        font-weight: 400;
-        letter-spacing: -0.6px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
         color: var(--text);
-        line-height: 1.25;
-        margin-bottom: 10px;
+        margin: 4px 0;
     }
-
-    .home-content p {
-        font-size: 14px;
-        color: var(--text-50);
-        line-height: 1.7;
-        margin-bottom: 28px;
+    .metric-label { font-size: 12px; color: var(--text-50); font-weight: 500; }
+    .grid-2 {
+        display: grid;
+        grid-template-columns: 1.3fr 1fr;
+        gap: 24px;
     }
+    .card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 22px;
+    }
+    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .action-btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="home-panel">
-    <div class="home-content fade-up">
+<div class="dashboard-container fade-up">
+    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <div>
+            <span style="font-size:12px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em;">Command Center</span>
+            <h1 style="font-size: 24px; font-weight: 600; margin-top:2px;">Welcome back, {{ user.first_name|default:user.username }}</h1>
+            <p style="color: var(--text-50); font-size: 13px;">Real-time transit operations and commuter mobility telemetry.</p>
+        </div>
+        <div class="action-btn-row">
+            <a href="{% url 'trips:planner' %}" class="btn btn-primary">📍 Plan Trip</a>
+            <a href="{% url 'vehicles:fleet_list' %}" class="btn btn-surface">🚌 View Live Fleet</a>
+            <a href="{% url 'feedback:complaint_list' %}" class="btn btn-ghost">⚠️ File Incident</a>
+        </div>
+    </div>
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    <!-- 4 Key Metrics -->
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">Operational Routes</div>
+            <div class="metric-num">{{ total_routes }}</div>
+            <div style="font-size:11px; color:#15803d; font-weight:500;">Active Corridors</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Active E-Jeep Units</div>
+            <div class="metric-num">{{ total_jeeps }}</div>
+            <div style="font-size:11px; color:var(--text-40);">Modernized Fleet</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Online GPS Trackers</div>
+            <div class="metric-num" style="color:#15803d;">{{ online_trackers }}</div>
+            <div style="font-size:11px; color:#15803d; font-weight:500;">Real-time Telemetry</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Available Seats Across Fleet</div>
+            <div class="metric-num" style="color:var(--accent);">{{ available_seats }} <span style="font-size:14px; color:var(--text-40); font-weight:400;">/ {{ total_seats }}</span></div>
+            <div style="font-size:11px; color:var(--text-40);">Cabin Vacancy</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Active Corridors -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h3 class="card-title" style="margin:0;">Major Transit Corridors</h3>
+                <a href="{% url 'routes:route_list' %}" style="font-size:12px; font-weight:600;">View All Routes &rarr;</a>
+            </div>
+
+            {% for r in active_routes %}
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                        <div style="font-weight:600; font-size:14px;">{{ r.name }}</div>
+                        <div style="font-size:12px; color:var(--text-50);">{{ r.start_point }} &rarr; {{ r.end_point }} ({{ r.stops.count }} stops)</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight:700; font-size:13px; color:var(--accent);">₱{{ r.base_fare }} base</span>
+                        <div style="font-size:11px; color:var(--text-40);">{{ r.jeeps.count }} E-Jeeps</div>
+                    </div>
+                </div>
+            {% empty %}
+                <p style="color:var(--text-40); font-size:13px;">No routes active.</p>
             {% endfor %}
-        {% endif %}
+        </div>
 
-        <p class="home-eyebrow">Home Screen</p>
-        <h1>Hello, {{ user.first_name|default:user.username }}.</h1>
-        <p>This is the home screen of JeepSeat.</p>
+        <!-- Live E-Jeeps Quick View -->
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h3 class="card-title" style="margin:0;">Live Fleet Status</h3>
+                <a href="{% url 'vehicles:fleet_list' %}" style="font-size:12px; font-weight:600;">Full Fleet &rarr;</a>
+            </div>
 
-        <a id="logout-link" href="{% url 'logout' %}" class="btn btn-surface btn-lg">
-            Sign out
-        </a>
-
+            {% for j in active_jeeps %}
+                <div style="padding:12px 0; border-bottom:1px solid var(--border);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:700; font-size:14px;">{{ j.plate_number }}</span>
+                        <span style="font-size:11px; background:rgba(0,102,204,0.1); color:var(--accent); padding:2px 8px; border-radius:999px; font-weight:600;">
+                            {{ j.current_passenger_load }}/{{ j.max_capacity }} Occupied
+                        </span>
+                    </div>
+                    <div style="font-size:12px; color:var(--text-50); margin-top:4px;">
+                        Next: {{ j.next_stop.name|default:"Depot / Terminal" }}
+                    </div>
+                </div>
+            {% empty %}
+                <p style="color:var(--text-40); font-size:13px;">No jeeps dispatched.</p>
+            {% endfor %}
+        </div>
     </div>
 </div>
 {% endblock %}

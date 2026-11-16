@@ -7,7 +7,7 @@ from users import views as user_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    path('', user_views.home_view, name='home'),
     path('routes/', include('routes.urls', namespace='routes')),
     path('vehicles/', include('vehicles.urls', namespace='vehicles')),
     path('trips/', include('trips.urls', namespace='trips')),
