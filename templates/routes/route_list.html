@@ -1,0 +1,174 @@
+{% extends "core/base.html" %}
+
+{% block title %}Routes — JeepSeat{% endblock %}
+
+{% block navbar %}
+<header class="navbar fade-up">
+    <a href="{% url 'home' %}" class="navbar-brand">JeepSeat</a>
+    <div class="navbar-spacer"></div>
+    <a class="nav-link" href="{% url 'home' %}">Dashboard</a>
+    <a class="nav-link active" style="font-weight:600; color:var(--text);" href="{% url 'routes:route_list' %}">Routes</a>
+    <a class="nav-link" href="{% url 'vehicles:fleet_list' %}">Fleet</a>
+    <a class="nav-link" href="{% url 'trips:planner' %}">Trip Planner</a>
+    <a class="nav-link" href="{% url 'feedback:complaint_list' %}">Feedback</a>
+    <a class="nav-link" href="{% url 'users:profile' %}">Profile</a>
+    <span style="font-size:13px; color:var(--text-50); margin-left: 8px;">{{ user.username }}</span>
+    <a href="{% url 'logout' %}" class="btn btn-ghost">Sign out</a>
+</header>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .routes-container {
+        padding: 28px 36px;
+        overflow-y: auto;
+    }
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .page-title {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+    }
+    .page-sub {
+        font-size: 13px;
+        color: var(--text-50);
+        margin-top: 4px;
+    }
+    .search-bar {
+        display: flex;
+        gap: 8px;
+        max-width: 380px;
+        width: 100%;
+    }
+    .route-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 18px;
+    }
+    .route-card {
+        background: #fff;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        padding: 22px;
+        transition: transform var(--t), box-shadow var(--t);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .route-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    }
+    .route-name {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: var(--text);
+    }
+    .route-endpoints {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--text-65);
+        margin-bottom: 16px;
+    }
+    .endpoint-pill {
+        background: var(--surface);
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        font-weight: 500;
+        font-size: 12px;
+    }
+    .route-stats {
+        display: flex;
+        gap: 18px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-50);
+    }
+    .stat-val {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        display: block;
+    }
+    .badge-jeeps {
+        background: rgba(0,102,204,0.1);
+        color: var(--accent);
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="routes-container fade-up">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Transit Routes & Stops</h1>
+            <p class="page-sub">Explore active E-Jeep transit corridors, designated stops, and fare schedules.</p>
+        </div>
+        <form method="GET" class="search-bar">
+            <input type="text" name="q" class="form-control" placeholder="Search route or terminal..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Search</button>
+            {% if query %}
+                <a href="{% url 'routes:route_list' %}" class="btn btn-ghost">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="route-grid">
+        {% for route in routes %}
+            <div class="route-card">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <span class="badge-jeeps">{{ route.jeeps.count }} Active E-Jeeps</span>
+                        <span style="font-size: 12px; color: var(--text-40);">Corridor #{{ route.id }}</span>
+                    </div>
+                    <h3 class="route-name">{{ route.name }}</h3>
+                    <div class="route-endpoints">
+                        <span class="endpoint-pill">{{ route.start_point }}</span>
+                        <span>&rarr;</span>
+                        <span class="endpoint-pill">{{ route.end_point }}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="route-stats">
+                        <div>
+                            <span class="stat-val">{{ route.stops.count }}</span>
+                            <span>Designated Stops</span>
+                        </div>
+                        <div>
+                            <span class="stat-val">₱{{ route.base_fare }}</span>
+                            <span>Base Fare</span>
+                        </div>
+                        <div>
+                            <span class="stat-val">₱{{ route.per_km_fare }}/km</span>
+                            <span>Distance Rate</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'routes:route_detail' route.id %}" class="btn btn-surface btn-full" style="margin-top: 14px;">
+                        View Route & Calculate Fare &rarr;
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 48px 0; color: var(--text-50);">
+                No routes found matching "{{ query }}".
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
