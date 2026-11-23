@@ -8,6 +8,7 @@ from users import views as user_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', user_views.home_view, name='home'),
+    path('home/', user_views.home_view, name='home_alias'),
     path('routes/', include('routes.urls', namespace='routes')),
     path('vehicles/', include('vehicles.urls', namespace='vehicles')),
     path('trips/', include('trips.urls', namespace='trips')),
